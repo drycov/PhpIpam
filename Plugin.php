@@ -1,7 +1,7 @@
 <?php
 namespace App\Plugins\PhpIpam;
 
-use App\Plugins\Plugin;
+use LibreNMS\Interfaces\Plugin;
 use Illuminate\Support\Facades\Event;
 
 class PhpIpamPlugin extends Plugin
