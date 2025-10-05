@@ -5,8 +5,37 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Config;
 
-class PhpIpamPlugin extends ServiceProvider
+/**
+ * If LibreNMS defines a Plugin interface/class, we want to prefer that
+ * to ensure full compatibility. If not available, we'll use the
+ * Laravel ServiceProvider as the base class.
+ */
+if (!class_exists('\LibreNMS\\Interfaces\\Plugin') && !interface_exists('\LibreNMS\\Interfaces\\Plugin')) {
+    // Create a lightweight alias so `extends PluginBase` still works.
+    class_alias(ServiceProvider::class, '\LibreNMS\\Interfaces\\Plugin');
+}
+
+// Provide a no-op trait for environments without LibreNMS hook methods
+trait PhpIpamPluginCompatibilityTrait
 {
+    // LibreNMS provides registerPollerHook in their plugin base; provide a safe no-op
+    public function registerPollerHook($name, callable $cb)
+    {
+        // no-op outside LibreNMS environment
+        return false;
+    }
+}
+
+/**
+ * Compatibility plugin/provider for LibreNMS.
+ *
+ * This class extends Laravel's ServiceProvider so it can be autoloaded
+ * outside of a full LibreNMS install. LibreNMS-specific hooks are
+ * called only when the methods exist (guarded with method_exists).
+ */
+class PhpIpamPlugin extends \LibreNMS\Interfaces\Plugin
+{
+    use PhpIpamPluginCompatibilityTrait;
     public function boot()
     {
         // Регистрация роутов
@@ -20,10 +49,12 @@ class PhpIpamPlugin extends ServiceProvider
             // возможно синхронизировать с phpIPAM
         });
 
-        // Можно подписаться на poller hook
-        $this->registerPollerHook('phpipam.sync', function ($device) {
-            // тут запустить синхронизацию для данного устройства
-        });
+        // Можно подписаться на poller hook (LibreNMS-specific)
+        if (method_exists($this, 'registerPollerHook')) {
+            $this->registerPollerHook('phpipam.sync', function ($device) {
+                // тут запустить синхронизацию для данного устройства
+            });
+        }
     }
 
     public function pluginDetails()
