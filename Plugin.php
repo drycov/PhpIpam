@@ -1,10 +1,11 @@
 <?php
 namespace App\Plugins\PhpIpam;
 
-use LibreNMS\Interfaces\Plugin;
+use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Config;
 
-class PhpIpamPlugin extends Plugin
+class PhpIpamPlugin extends ServiceProvider
 {
     public function boot()
     {
